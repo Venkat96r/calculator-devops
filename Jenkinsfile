@@ -68,5 +68,24 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy') {
+            steps {
+                sh '''
+                  export DOCKERHUB_USER IMAGE_TAG
+                  docker compose pull
+                  docker compose up -d --remove-orphans
+
+                  echo "Waiting for health..."
+                  for i in $(seq 1 20); do
+                    if curl -fs http://localhost:8081/actuator/health | grep -q '"status":"UP"'; then
+                      echo "Service is UP"; exit 0
+                    fi
+                    sleep 5
+                  done
+                  echo "Health check failed"; docker compose logs --tail=50; exit 1
+                '''
+            }
+        }
     }
 }
