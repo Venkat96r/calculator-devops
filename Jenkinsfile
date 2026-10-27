@@ -88,4 +88,17 @@ pipeline {
             }
         }
     }
+
+    post {
+        success {
+            mail to: '<EMAIL>',
+                 subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "Build succeeded.\nImage: ${IMAGE_NAME}:${IMAGE_TAG}\n${env.BUILD_URL}"
+        }
+        failure {
+            mail to: '<EMAIL>',
+                 subject: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                 body: "Build failed.\nSee ${env.BUILD_URL}console"
+        }
+    }
 }
