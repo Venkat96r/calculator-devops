@@ -11,6 +11,12 @@ pipeline {
         githubPush()            // webhook; if unavailable use: pollSCM('H/2 * * * *')
     }
 
+    environment {
+        DOCKERHUB_USER = '<DOCKERHUB_USER>'
+        IMAGE_NAME     = "${DOCKERHUB_USER}/calculator-api"
+        IMAGE_TAG      = "${BUILD_NUMBER}"
+    }
+
     tools {
         maven 'Maven3'          // must match name in Jenkins Global Tool Configuration
         jdk   'JDK17'
@@ -36,6 +42,29 @@ pipeline {
             post {
                 always {
                     junit 'target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Docker Build') {
+            steps {
+                sh '''
+                  docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .
+                '''
+            }
+        }
+
+        stage('Push') {
+            steps {
+                withCredentials([usernamePassword(credentialsId: 'dockerhub-creds',
+                                                  usernameVariable: 'DH_USER',
+                                                  passwordVariable: 'DH_PASS')]) {
+                    sh '''
+                      echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
+                      docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                      docker push ${IMAGE_NAME}:latest
+                      docker logout
+                    '''
                 }
             }
         }
