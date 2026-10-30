@@ -6,7 +6,7 @@
   <style>
     @page {
       size: A4;
-      margin: 18mm 18mm 18mm 18mm;
+      margin: 16mm 18mm 16mm 18mm;
     }
     body {
       font-family: "Latin Modern Roman", "Computer Modern Roman", "Times New Roman", Times, serif;
@@ -19,9 +19,9 @@
     }
     .header {
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 18px;
       border-bottom: 1.5px solid #222;
-      padding-bottom: 12px;
+      padding-bottom: 10px;
     }
     h1 {
       font-size: 18pt;
@@ -42,7 +42,7 @@
     h2 {
       font-size: 13pt;
       font-weight: bold;
-      margin: 18px 0 8px 0;
+      margin: 16px 0 8px 0;
       border-bottom: 1px solid #ddd;
       padding-bottom: 2px;
     }
@@ -63,17 +63,6 @@
       background: #f4f4f5;
       padding: 1px 4px;
       border-radius: 3px;
-    }
-    pre {
-      font-family: "Consolas", "Courier New", monospace;
-      font-size: 8.5pt;
-      background: #f8fafc;
-      border: 1px solid #cbd5e1;
-      padding: 10px;
-      border-radius: 4px;
-      overflow-x: auto;
-      line-height: 1.35;
-      margin: 8px 0 12px 0;
     }
     table {
       width: 100%;
@@ -96,12 +85,12 @@
       font-style: italic;
       text-align: center;
       margin-top: 5px;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
       color: #334155;
     }
     .figure-box {
       text-align: center;
-      margin: 14px 0 8px 0;
+      margin: 12px 0 8px 0;
       page-break-inside: avoid;
     }
     .figure-box img {
@@ -109,7 +98,7 @@
       height: auto;
       border: 1px solid #94a3b8;
       border-radius: 4px;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+      box-shadow: 0 1px 4px rgba(0,0,0,0.08);
     }
     .page-break {
       page-break-before: always;
@@ -135,49 +124,18 @@
   </ul>
 
   <h2>2 Pipeline Architecture</h2>
-  <pre>
-Developer          GitHub             Jenkins                      Email
-git push    -->  repository  -->  Pipeline job + Jenkinsfile  -->  notification
-                   (main)             (SCM Poll)                    (post block)
-                                          |
-    +-------------------------------------+
-    v
-+---------------+     +---------------+     +---------------+     +--------------------+     +-------------------+     +------------------+
-|  1. Checkout  | --> |   2. Build    | --> |    3. Test    | --> |  4. Docker Build   | --> |      5. Push      | --> |    6. Deploy     |
-| (checkout scm)|     | (mvn package) |     | (JUnit+MockMvc)     | (tag = build no.)  |     |   (Docker Hub)    |     | (compose up -d)  |
-+---------------+     +---------------+     +---------------+     +--------------------+     +-------------------+     +------------------+
-                                                                                                       |                         |
-                                                                                                       v                         v
-                                                                                           +-----------------------+     +----------------------+
-                                                                                           |      Docker Hub       |     | Docker Compose Stack |
-                                                                                           | calculator-api:<bld>  |     |      (calc-net)      |
-                                                                                           +-----------------------+     +----------+-----------+
-                                                                                                                                    |
-                                                                                                                  +-----------------+-----------------+
-                                                                                                                  |                                   |
-                                                                                                                  v                                   v
-                                                                                                      +-----------------------+           +-----------------------+
-                                                                                                      |   calculator-app-1    |           |   calculator-app-2    |
-                                                                                                      |    (replica 1, UP)    |           |    (replica 2, UP)    |
-                                                                                                      +-----------------------+           +-----------------------+
-                                                                                                                  ^                                   ^
-                                                                                                                  |                                   |
-                                                                                                                  +-----------------+-----------------+
-                                                                                                                                    |
-                                                                                                                      +-------------+-------------+
-                                                                                                                      |    Nginx Reverse Proxy    |
-                                                                                                                      |        :8081 -> :80       |
-                                                                                                                      +---------------------------+
-  </pre>
-  <div class="caption">
-    Figure 1. Pipeline architecture. A push to main triggers SCM polling; Jenkins runs the six stages and e-mails the result; the image is published to Docker Hub and deployed as an Nginx-fronted, two-replica Compose stack.
+  <div class="figure-box">
+    <img src="screenshots/architecture_pipeline.png" alt="End-to-End Pipeline Architecture">
+    <div class="caption">
+      Figure 1. Pipeline architecture. A push to main triggers SCM polling; Jenkins runs the six stages and e-mails the result; the image is published to Docker Hub and deployed as an Nginx-fronted, two-replica Compose stack.
+    </div>
   </div>
 
   <h2>3 Pipeline Stages</h2>
   <table>
     <thead>
       <tr>
-        <th style="width: 22%;">Stage</th>
+        <th style="width: 20%;">Stage</th>
         <th>Description</th>
       </tr>
     </thead>
@@ -248,7 +206,7 @@ git push    -->  repository  -->  Pipeline job + Jenkinsfile  -->  notification
     <div class="caption">Figure 2. Green Jenkins declarative pipeline execution graph (all stages passing from Checkout through Deploy and Post Actions).</div>
   </div>
 
-  <div class="figure-box" style="max-width: 85%; margin: 0 auto;">
+  <div class="figure-box" style="max-width: 82%; margin: 0 auto;">
     <img src="screenshots/screenshot_b_email.png" alt="Build status e-mail notification">
     <div class="caption">Figure 3. Build status email notification received in Gmail inbox with build number (#7), image tag, and build URL.</div>
   </div>

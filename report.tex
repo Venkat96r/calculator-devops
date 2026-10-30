@@ -1,14 +1,12 @@
 \documentclass[11pt,a4paper]{article}
 \usepackage[utf8]{inputenc}
-\usepackage[margin=0.85in]{geometry}
+\usepackage[margin=0.8in]{geometry}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{booktabs}
 \usepackage{tabularx}
 \usepackage{enumitem}
 \usepackage{xcolor}
-\usepackage{tikz}
-\usetikzlibrary{shapes.geometric, arrows.meta, positioning, fit, backgrounds}
 
 % Hyperlink styling
 \hypersetup{
@@ -19,13 +17,13 @@
 }
 
 \setlength{\parindent}{0pt}
-\setlength{\parskip}{6pt}
+\setlength{\parskip}{5pt}
 
 \begin{document}
 
 % ------------------- Title Header -------------------
 \begin{center}
-    {\LARGE \textbf{End-to-End CI/CD Pipeline for a Calculator REST API}}\\[0.4em]
+    {\LARGE \textbf{End-to-End CI/CD Pipeline for a Calculator REST API}}\\[0.35em]
     {\large CSE 816 -- Software Production Engineering \quad$|$\quad Mini-Project Report}\\[0.3em]
     {\large \textbf{P. Venkata Rami Reddy} \quad$|$\quad \textbf{[Roll Number: IMTXXXXXXXX]}}
 \end{center}
@@ -47,66 +45,10 @@ A Spring Boot (Java 17, Maven) calculator service exposes \texttt{/api/v1/add}, 
 \section{Pipeline Architecture}
 
 \begin{figure}[htbp]
-\centering
-\begin{tikzpicture}[
-    >=Latex,
-    font=\sffamily\footnotesize,
-    node distance=0.7cm and 0.8cm,
-    block/.style={draw, rectangle, rounded corners=3pt, minimum height=0.7cm, minimum width=1.5cm, align=center, fill=gray!8},
-    stage/.style={draw, rectangle, rounded corners=2pt, minimum height=0.65cm, minimum width=1.35cm, align=center, fill=green!12, draw=green!60!black, font=\sffamily\scriptsize},
-    container/.style={draw, rectangle, rounded corners=3pt, minimum height=0.65cm, minimum width=1.6cm, align=center, fill=blue!8, draw=blue!60!black, font=\sffamily\scriptsize}
-]
-
-    % Top flow
-    \node[block] (dev) {Developer\\(git push)};
-    \node[block, right=1.2cm of dev] (gh) {GitHub\\repository (\texttt{main})};
-    \node[block, right=1.2cm of gh, fill=blue!10] (jenkins) {Jenkins\\Pipeline Job};
-    \node[block, right=1.2cm of jenkins] (email) {Email\\Notification};
-
-    \draw[->, thick] (dev) -- node[above, font=\tiny] {push} (gh);
-    \draw[->, thick] (gh) -- node[above, font=\tiny] {SCM Poll} (jenkins);
-    \draw[->, thick] (jenkins) -- node[above, font=\tiny] {post} (email);
-
-    % Pipeline stages
-    \node[stage, below=1.2cm of dev, xshift=0.3cm] (s1) {1. Checkout};
-    \node[stage, right=0.25cm of s1] (s2) {2. Build\\{\tiny mvn package}};
-    \node[stage, right=0.25cm of s2] (s3) {3. Test\\{\tiny JUnit+MockMvc}};
-    \node[stage, right=0.25cm of s3] (s4) {4. Docker Build\\{\tiny tag = build no.}};
-    \node[stage, right=0.25cm of s4] (s5) {5. Push\\{\tiny Docker Hub}};
-    \node[stage, right=0.25cm of s5] (s6) {6. Deploy\\{\tiny compose up -d}};
-
-    \draw[->, thick] (jenkins.south) |- ([yshift=0.3cm]s3.north) -| (s1.north);
-    \draw[->] (s1) -- (s2);
-    \draw[->] (s2) -- (s3);
-    \draw[->] (s3) -- (s4);
-    \draw[->] (s4) -- (s5);
-    \draw[->] (s5) -- (s6);
-
-    % Border around pipeline stages
-    \begin{scope}[on background layer]
-        \node[draw=dashed, gray, inner sep=6pt, rounded corners=4pt, fit=(s1) (s6), label={[gray, font=\tiny, anchor=north west]north west:Jenkins declarative pipeline stages}] (stagebox) {};
-    \end{scope}
-
-    % Docker Hub and Compose stack
-    \node[block, below=1.1cm of s5, fill=orange!12, draw=orange!70!black] (dh) {Docker Hub\\{\tiny\texttt{calculator-api:<bld>}}};
-    \node[container, below=1.1cm of s6, fill=purple!10, draw=purple!60!black] (nginx) {Nginx Proxy\\{\tiny \texttt{:8081} $\to$ \texttt{:80}}};
-    \node[container, below=0.6cm of nginx, xshift=-1.1cm] (rep1) {calculator\\replica 1};
-    \node[container, below=0.6cm of nginx, xshift=1.1cm] (rep2) {calculator\\replica 2};
-
-    \draw[->, thick] (s5) -- (dh);
-    \draw[->, thick] (dh) -- (s6);
-    \draw[->, thick] (s6) -- (nginx);
-    \draw[->] (nginx.south) -- ++(0,-0.2) -| (rep1.north);
-    \draw[->] (nginx.south) -- ++(0,-0.2) -| (rep2.north);
-
-    % Border around Compose stack
-    \begin{scope}[on background layer]
-        \node[draw=dotted, blue!70!black, inner sep=6pt, rounded corners=4pt, fit=(nginx) (rep1) (rep2), label={[blue!70!black, font=\tiny, anchor=south west]south west:Docker Compose stack (\texttt{calc-net})}] {};
-    \end{scope}
-
-\end{tikzpicture}
-\caption{Pipeline architecture. A push to \texttt{main} triggers SCM polling; Jenkins runs the six declarative stages and emails the result; the built container image is published to Docker Hub and deployed as an Nginx-fronted, two-replica Compose cluster.}
-\label{fig:arch}
+    \centering
+    \includegraphics[width=\textwidth]{screenshots/architecture_pipeline.png}
+    \caption{End-to-End Pipeline Architecture. A push to \texttt{main} triggers SCM polling; Jenkins executes the six declarative stages and emails the result; the container image is published to Docker Hub and deployed to the two-replica Compose stack fronted by Nginx.}
+    \label{fig:arch}
 \end{figure}
 
 \vspace{-0.5em}
@@ -122,17 +64,17 @@ A Spring Boot (Java 17, Maven) calculator service exposes \texttt{/api/v1/add}, 
 \textbf{Stage} & \textbf{Description} \\
 \midrule
 \textbf{Checkout} & \texttt{checkout scm} pulls the latest commit. The build is triggered automatically by SCM polling (\texttt{pollSCM('* * * * *')}). \\
-\addlinespace[3pt]
+\addlinespace[2pt]
 \textbf{Build} & \texttt{mvn -B clean package -DskipTests} compiles the Java 17 code and packages the executable JAR \texttt{target/calculator.jar}. \\
-\addlinespace[3pt]
+\addlinespace[2pt]
 \textbf{Test} & \texttt{mvn -B test} runs the 5 JUnit 5 unit tests and 7 MockMvc integration tests. The \texttt{junit} step records test results from \texttt{target/surefire-reports/*.xml}; any failure stops the pipeline. \\
-\addlinespace[3pt]
+\addlinespace[2pt]
 \textbf{Docker Build} & Builds the multi-stage image (Stage 1: \texttt{maven:3.9-eclipse-temurin-17} builder with dependency offline cache; Stage 2: slim \texttt{eclipse-temurin:17-jre-alpine} runtime, non-root user \texttt{app:100}, \texttt{EXPOSE 8080}) and tags it with both \texttt{\$\{BUILD\_NUMBER\}} and \texttt{latest}. \\
-\addlinespace[3pt]
+\addlinespace[2pt]
 \textbf{Push} & Authenticates using Jenkins credentials store (\texttt{docker-cred}) via \texttt{withCredentials}, pipes credentials securely to \texttt{docker login --password-stdin}, pushes both tags, and logs out in a post block. No secret is saved in repository or logged. \\
-\addlinespace[3pt]
+\addlinespace[2pt]
 \textbf{Deploy} & \texttt{docker compose pull \&\& docker compose up -d --remove-orphans} starts Nginx and two replicas, then polls \texttt{/actuator/health} through the proxy (up to 100 s) and fails the build if the stack never reports \texttt{UP}. \\
-\addlinespace[3pt]
+\addlinespace[2pt]
 \textbf{Notify} & The pipeline post block dispatches an automated \texttt{SUCCESS} or \texttt{FAILURE} email notification with the build number and console URL. \\
 \bottomrule
 \end{tabularx}
@@ -149,7 +91,7 @@ A Spring Boot (Java 17, Maven) calculator service exposes \texttt{/api/v1/add}, 
 % ------------------- Section 4: Challenges Faced -------------------
 \section{Challenges Faced}
 
-\begin{itemize}[leftmargin=*,itemsep=4pt]
+\begin{itemize}[leftmargin=*,itemsep=3pt]
     \item \textbf{Nginx was not load balancing across replicas.} Docker DNS returned both replica addresses, yet access logs showed traffic sticking to a single replica because standard Nginx resolves upstream hostnames only once during startup. Using Docker's embedded DNS resolver (\texttt{resolver 127.0.0.11 valid=10s;}) with a runtime variable in \texttt{proxy\_pass} (\texttt{set \$upstream http://app:8080; proxy\_pass \$upstream;}) forces Nginx to dynamically resolve IPs per request. Traffic is then evenly split across both replicas, and newly created containers are discovered without restarting Nginx.
     
     \item \textbf{Port clash with Jenkins on Host.} Jenkins occupies host port 8080. Exposing the Spring Boot service directly on port 8080 caused binding collisions (\texttt{address already in use}). By isolating the Spring Boot replicas strictly inside the internal Docker bridge network on port 8080 and mapping Nginx externally to port 8081 (\texttt{8081:80}), external clients and pipeline health probes interact via \texttt{http://localhost:8081} without interfering with Jenkins.
@@ -171,7 +113,7 @@ A Spring Boot (Java 17, Maven) calculator service exposes \texttt{/api/v1/add}, 
 
 \begin{figure}[htbp]
     \centering
-    \includegraphics[width=0.82\textwidth]{screenshots/screenshot_b_email.png}
+    \includegraphics[width=0.80\textwidth]{screenshots/screenshot_b_email.png}
     \caption{Build status email notification received in Gmail inbox with build number (\#7), image tag, and build URL.}
     \label{fig:email}
 \end{figure}
@@ -185,7 +127,7 @@ A Spring Boot (Java 17, Maven) calculator service exposes \texttt{/api/v1/add}, 
     \label{fig:dockerps}
 \end{figure}
 
-\vspace{1em}
+\vspace{0.8em}
 
 \begin{figure}[htbp]
     \centering
