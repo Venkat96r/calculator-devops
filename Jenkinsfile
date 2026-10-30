@@ -12,9 +12,11 @@ pipeline {
     }
 
     environment {
+        JAVA_HOME      = 'C:\\Users\\ramiv\\Documents\\OpenJDK17U-jdk_x64_windows_hotspot_17.0.17_10\\jdk-17.0.17+10'
         DOCKERHUB_USER = 'venkat96r'
         IMAGE_NAME     = "${DOCKERHUB_USER}/calculator-api"
         IMAGE_TAG      = "${BUILD_NUMBER}"
+        PATH           = "C:\\Users\\ramiv\\apache-maven-3.9.11-bin\\apache-maven-3.9.11\\bin;C:\\Users\\ramiv\\Documents\\OpenJDK17U-jdk_x64_windows_hotspot_17.0.17_10\\jdk-17.0.17+10\\bin;C:\\Program Files\\Docker\\Docker\\resources\\bin;${env.PATH}"
     }
 
     stages {
@@ -125,17 +127,25 @@ pipeline {
 
     post {
         success {
-            catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
-                mail to: 'ramivenkat16@gmail.com',
-                     subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                     body: "Build succeeded.\nImage: ${IMAGE_NAME}:${IMAGE_TAG}\n${env.BUILD_URL}"
+            script {
+                try {
+                    mail to: 'ramivenkat16@gmail.com',
+                         subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                         body: "Build succeeded.\nImage: ${IMAGE_NAME}:${IMAGE_TAG}\n${env.BUILD_URL}"
+                } catch (Exception e) {
+                    echo "Notification email could not be sent (SMTP not configured): ${e.message}"
+                }
             }
         }
         failure {
-            catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
-                mail to: 'ramivenkat16@gmail.com',
-                     subject: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                     body: "Build failed.\nSee ${env.BUILD_URL}console"
+            script {
+                try {
+                    mail to: 'ramivenkat16@gmail.com',
+                         subject: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                         body: "Build failed.\nSee ${env.BUILD_URL}console"
+                } catch (Exception e) {
+                    echo "Notification email could not be sent (SMTP not configured): ${e.message}"
+                }
             }
         }
     }
