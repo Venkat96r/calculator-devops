@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>End-to-End CI/CD Pipeline for a Calculator REST API</title>
+  <style>
+    @page {
+      size: A4;
+      margin: 18mm 18mm 18mm 18mm;
+    }
+    body {
+      font-family: "Latin Modern Roman", "Computer Modern Roman", "Times New Roman", Times, serif;
+      font-size: 11pt;
+      line-height: 1.45;
+      color: #111;
+      margin: 0;
+      padding: 0;
+      background: #fff;
+    }
+    .header {
+      text-align: center;
+      margin-bottom: 22px;
+      border-bottom: 1.5px solid #333;
+      padding-bottom: 12px;
+    }
+    h1 {
+      font-size: 18pt;
+      font-weight: bold;
+      margin: 0 0 6px 0;
+      letter-spacing: -0.2px;
+    }
+    .subtitle {
+      font-size: 11pt;
+      margin: 0 0 4px 0;
+      color: #333;
+    }
+    .author {
+      font-size: 11pt;
+      font-weight: 600;
+      margin: 0;
+    }
+    h2 {
+      font-size: 13pt;
+      font-weight: bold;
+      margin: 16px 0 8px 0;
+      border-bottom: 1px solid #ddd;
+      padding-bottom: 2px;
+    }
+    h3 {
+      font-size: 11pt;
+      font-weight: bold;
+      margin: 12px 0 4px 0;
+    }
+    p {
+      margin: 0 0 8px 0;
+      text-align: justify;
+    }
+    ul {
+      margin: 4px 0 10px 18px;
+      padding: 0;
+    }
+    li {
+      margin-bottom: 3px;
+    }
+    code {
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 9.5pt;
+      background: #f4f4f5;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+    pre {
+      font-family: "Consolas", "Courier New", monospace;
+      font-size: 8.5pt;
+      background: #f8fafc;
+      border: 1px solid #e2e8f0;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      line-height: 1.35;
+      margin: 8px 0 12px 0;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 10px 0 14px 0;
+      font-size: 10pt;
+    }
+    th, td {
+      border: 1px solid #cbd5e1;
+      padding: 6px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+    th {
+      background: #f1f5f9;
+      font-weight: bold;
+    }
+    .caption {
+      font-size: 9pt;
+      font-style: italic;
+      text-align: center;
+      margin-top: 4px;
+      margin-bottom: 14px;
+      color: #475569;
+    }
+    .figure-box {
+      text-align: center;
+      margin: 12px 0 8px 0;
+      page-break-inside: avoid;
+    }
+    .figure-box img {
+      max-width: 100%;
+      height: auto;
+      border: 1px solid #cbd5e1;
+      border-radius: 4px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+    }
+    .img-placeholder {
+      border: 2px dashed #94a3b8;
+      border-radius: 6px;
+      padding: 24px;
+      text-align: center;
+      background: #f8fafc;
+      color: #475569;
+      margin: 8px 0;
+      font-size: 10pt;
+    }
+    .page-break {
+      page-break-before: always;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="header">
+    <h1>End-to-End CI/CD Pipeline for a Calculator REST API</h1>
+    <div class="subtitle">CSE 816 — Software Production Engineering &nbsp;|&nbsp; Mini-Project Report</div>
+    <div class="author">Venkat &nbsp;|&nbsp; [Roll Number]</div>
+  </div>
+
+  <h2>1 Overview</h2>
+  <p>
+    A Spring Boot (Java 17, Maven) calculator service exposes <code>/api/v1/add</code>, <code>subtract</code>, <code>multiply</code>, <code>divide</code> and the Actuator endpoint <code>/actuator/health</code>. Invalid or missing parameters and division by zero return HTTP 400 with a structured JSON error.
+  </p>
+  <ul>
+    <li><strong>GitHub:</strong> <a href="https://github.com/Venkat96r/calculator-devops">https://github.com/Venkat96r/calculator-devops</a></li>
+    <li><strong>Docker Hub:</strong> <a href="https://hub.docker.com/r/venkat96r/calculator-api">https://hub.docker.com/r/venkat96r/calculator-api</a></li>
+    <li><strong>Tools:</strong> Git/GitHub, Jenkins (declarative pipeline), Docker (multi-stage image), Docker Compose with Nginx.</li>
+  </ul>
+
+  <h2>2 Pipeline Architecture</h2>
+  <pre>
+Developer          GitHub             Jenkins                      Email
+git push    -->  repository  -->  Pipeline job + Jenkinsfile  -->  notification
+                   (main)             (SCM Poll)                    (post block)
+                                          |
+    +-------------------------------------+
+    v
++---------------+     +---------------+     +---------------+     +--------------------+     +-------------------+     +------------------+
+|  1. Checkout  | --> |   2. Build    | --> |    3. Test    | --> |  4. Docker Build   | --> |      5. Push      | --> |    6. Deploy     |
+| (checkout scm)|     | (mvn package) |     | (JUnit+MockMvc)     | (tag = build no.)  |     |   (Docker Hub)    |     | (compose up -d)  |
++---------------+     +---------------+     +---------------+     +--------------------+     +-------------------+     +------------------+
+                                                                                                       |                         |
+                                                                                                       v                         v
+                                                                                           +-----------------------+     +----------------------+
+                                                                                           |      Docker Hub       |     | Docker Compose Stack |
+                                                                                           | calculator-api:<bld>  |     |      (calc-net)      |
+                                                                                           +-----------------------+     +----------+-----------+
+                                                                                                                                    |
+                                                                                                                  +-----------------+-----------------+
+                                                                                                                  |                                   |
+                                                                                                                  v                                   v
+                                                                                                      +-----------------------+           +-----------------------+
+                                                                                                      |   calculator-app-1    |           |   calculator-app-2    |
+                                                                                                      |    (replica 1, UP)    |           |    (replica 2, UP)    |
+                                                                                                      +-----------------------+           +-----------------------+
+                                                                                                                  ^                                   ^
+                                                                                                                  |                                   |
+                                                                                                                  +-----------------+-----------------+
+                                                                                                                                    |
+                                                                                                                      +-------------+-------------+
+                                                                                                                      |    Nginx Reverse Proxy    |
+                                                                                                                      |        :8081 -> :80       |
+                                                                                                                      +---------------------------+
+  </pre>
+  <div class="caption">
+    Figure 1. Pipeline architecture. A push to main triggers SCM polling; Jenkins runs the six stages and e-mails the result; the image is published to Docker Hub and deployed as an Nginx-fronted, two-replica Compose stack.
+  </div>
+
+  <h2>3 Pipeline Stages</h2>
+  <table>
+    <thead>
+      <tr>
+        <th style="width: 22%;">Stage</th>
+        <th>Description</th>
+      </tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Checkout</strong></td>
+        <td><code>checkout scm</code> pulls the latest commit. The job is triggered automatically by SCM polling (<code>pollSCM('* * * * *')</code>).</td>
+      </tr>
+      <tr>
+        <td><strong>Build</strong></td>
+        <td><code>mvn -B clean package -DskipTests</code> compiles Java 17 code and produces the executable JAR <code>target/calculator.jar</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>Test</strong></td>
+        <td><code>mvn -B test</code> runs the JUnit 5 unit tests and MockMvc integration tests. The <code>junit</code> step publishes <code>target/surefire-reports/*.xml</code>; a failing test halts the pipeline.</td>
+      </tr>
+      <tr>
+        <td><strong>Docker Build</strong></td>
+        <td>Builds the multi-stage image (Maven/JDK 17 build stage, slim JRE 17 Alpine runtime stage, non-root user <code>app:100</code>, EXPOSE 8080, dependency layer cached) and tags it with the build number and <code>latest</code>.</td>
+      </tr>
+      <tr>
+        <td><strong>Push</strong></td>
+        <td>Logs in with <code>withCredentials</code> using Jenkins credential <code>docker-cred</code>, pipes credentials through <code>docker login --password-stdin</code>, pushes both tags, and logs out in a post block. No secret is stored in repository or logs.</td>
+      </tr>
+      <tr>
+        <td><strong>Deploy</strong></td>
+        <td><code>docker compose pull && docker compose up -d --remove-orphans</code> starts Nginx and two replicas, then polls <code>/actuator/health</code> through the proxy (up to 100 s) and fails the build if the stack never reports UP.</td>
+      </tr>
+      <tr>
+        <td><strong>Notify</strong></td>
+        <td>The pipeline post block dispatches a <code>SUCCESS</code> or <code>FAILURE</code> email with the build URL.</td>
+      </tr>
+    </tbody>
+  </table>
+
+  <p>
+    <strong>Idempotency.</strong> Re-running with the same image tag leaves all containers untouched; a new tag recreates only the calculator replicas, and the health check still passes. Both cases were verified repeatedly across pipeline executions.
+  </p>
+  <p>
+    <strong>Compose design.</strong> The stack declares a named bridge network (<code>calc-net</code>), a health check on <code>/actuator/health</code>, <code>restart: unless-stopped</code>, environment variables, and <code>depends_on</code> with <code>condition: service_healthy</code> so Nginx starts only after the API is ready. The proxy host port is mapped to 8081 (avoiding Jenkins port 8080), and the image tag is dynamically injected (<code>IMAGE_TAG</code>).
+  </p>
+  <p>
+    <strong>Version control.</strong> Work was done progressively on feature branches and merged with <code>--no-ff</code>: <code>feature/calculator-api</code>, <code>feature/docker</code>, and <code>feature/jenkins-pipeline</code>, using conventional commit messages. <code>.gitignore</code> excludes build outputs, IDE files, and secrets.
+  </p>
+
+  <div class="page-break"></div>
+
+  <h2>4 Challenges Faced</h2>
+  <ul>
+    <li>
+      <strong>Nginx was not load balancing across replicas.</strong> Docker DNS returned both replica addresses, yet an access log showed traffic sticking to a single replica because standard Nginx resolves hostnames once during startup. Using Docker’s embedded resolver (<code>127.0.0.11 valid=10s;</code>) with a runtime variable in <code>proxy_pass</code> (<code>set $upstream http://app:8080; proxy_pass $upstream;</code>) makes Nginx resolve dynamically per request; traffic is evenly distributed across both replicas and recreated containers are picked up without restarting Nginx.
+    </li>
+    <li>
+      <strong>Port clash with Jenkins.</strong> Jenkins and the proxy both default to port 8080. Exposing the Spring Boot service directly on 8080 caused socket binding collisions. The application was kept inside the Docker bridge network on port 8080 and Nginx was mapped externally to port 8081 (<code>8081:80</code>); the Compose project name is pinned (<code>calculator</code>) so it remains independent of the Jenkins workspace folder.
+    </li>
+    <li>
+      <strong>Cross-Platform Jenkins execution on Windows Host.</strong> The local Jenkins service runs on Windows under Local System, which lacks POSIX <code>sh.exe</code> and user environment variables. Implementing cross-platform step branching (<code>isUnix()</code>), explicitly injecting <code>JAVA_HOME</code> and Maven into the pipeline <code>PATH</code>, and resolving PowerShell embedded regex quotes in the healthcheck loop allowed the pipeline to execute natively on Windows while remaining 100% portable to Linux agents.
+    </li>
+    <li>
+      <strong>Automated triggering without public webhooks.</strong> GitHub webhooks require a publicly exposed URL (e.g. via ngrok). To keep the pipeline self-contained without third-party tunnels or external open ports, Jenkins SCM Polling (<code>pollSCM('* * * * *')</code>) was configured to query GitHub every minute, reliably triggering builds on push.
+    </li>
+  </ul>
+
+  <h2>5 Screenshots</h2>
+
+  <div class="figure-box">
+    <img src="screenshots/a_jenkins_pipeline.png" alt="(a) Green Jenkins pipeline run" onerror="this.outerHTML='<div class=\'img-placeholder\'><strong>(a) Green Jenkins pipeline run (all stages)</strong><br>Snap from <code>http://localhost:8080/job/calculator-devops/</code> (Stage View) & save to <code>screenshots/a_jenkins_pipeline.png</code></div>'">
+    <div class="caption">(a) Green Jenkins pipeline run (all stages)</div>
+  </div>
+
+  <div class="figure-box">
+    <img src="screenshots/b_email_notification.png" alt="(b) Build status e-mail notification" onerror="this.outerHTML='<div class=\'img-placeholder\'><strong>(b) Build status e-mail notification</strong><br>Snap email notification from Gmail / mail client & save to <code>screenshots/b_email_notification.png</code></div>'">
+    <div class="caption">(b) Build status e-mail notification</div>
+  </div>
+
+  <div class="figure-box">
+    <img src="screenshots/c_docker_ps.png" alt="(c) docker ps: Nginx and two calculator replicas">
+    <div class="caption">(c) docker ps: Nginx and two calculator replicas</div>
+  </div>
+
+  <div class="figure-box">
+    <img src="screenshots/d_sample_api_400.png" alt="(d) Sample API, a 400 error">
+    <div class="caption">(d) Sample API, a 400 error</div>
+  </div>
+
+  <div class="page-break"></div>
+
+  <div class="figure-box">
+    <img src="screenshots/e_dockerhub_tags.png" alt="(e) Docker Hub repository with build-number tags" onerror="this.outerHTML='<div class=\'img-placeholder\'><strong>(e) Docker Hub repository with build-number tags</strong><br>Snap from <code>https://hub.docker.com/r/venkat96r/calculator-api/tags</code> & save to <code>screenshots/e_dockerhub_tags.png</code></div>'">
+    <div class="caption">(e) Docker Hub repository with build-number tags</div>
+  </div>
+
+  <div class="figure-box">
+    <img src="screenshots/f_git_graph.png" alt="(f) Git commit history graph">
+    <div class="caption">(f) Git commit history graph with feature branch merges</div>
+  </div>
+
+  <div class="figure-box">
+    <img src="screenshots/g_sample_api_200.png" alt="(g) HTTP 200 OK response">
+    <div class="caption">(g) HTTP 200 OK response</div>
+  </div>
+
+</body>
+</html>
