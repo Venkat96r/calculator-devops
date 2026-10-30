@@ -29,7 +29,7 @@ A production-grade, highly available Calculator REST API built with Java 17 and 
                                       v
                         +---------------------------+
                         |         Docker Hub        |
-                        |   <DOCKERHUB_USER>/       |
+                        |   venkat96r/              |
                         |   calculator-api:tag      |
                         +-------------+-------------+
                                       |
@@ -295,4 +295,4 @@ The declarative Jenkins pipeline (`Jenkinsfile`) automates build, test, packagin
 ## Docker Hub Registry
 
 Public repository:  
-`https://hub.docker.com/r/<DOCKERHUB_USER>/calculator-api`
+`https://hub.docker.com/r/venkat96r/calculator-api`

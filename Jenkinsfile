@@ -12,7 +12,7 @@ pipeline {
     }
 
     environment {
-        DOCKERHUB_USER = '<DOCKERHUB_USER>'
+        DOCKERHUB_USER = 'venkat96r'
         IMAGE_NAME     = "${DOCKERHUB_USER}/calculator-api"
         IMAGE_TAG      = "${BUILD_NUMBER}"
     }
@@ -91,12 +91,12 @@ pipeline {
 
     post {
         success {
-            mail to: '<EMAIL>',
+            mail to: 'ramivenkat16@gmail.com',
                  subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                  body: "Build succeeded.\nImage: ${IMAGE_NAME}:${IMAGE_TAG}\n${env.BUILD_URL}"
         }
         failure {
-            mail to: '<EMAIL>',
+            mail to: 'ramivenkat16@gmail.com',
                  subject: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
                  body: "Build failed.\nSee ${env.BUILD_URL}console"
         }

@@ -94,3 +94,4 @@ During the setup and verification of the pipeline, several real-world DevOps cha
 - [ ] **Screenshot 5**: Terminal curls showing 200 success response, 400 divide-by-zero, and 400 missing parameter.
 - [ ] **Screenshot 6**: Docker Hub web console displaying image tags (`${BUILD_NUMBER}` and `latest`).
 - [ ] **Screenshot 7**: GitHub commit history and merged PRs graph (`git log --graph --oneline`).
+
