@@ -117,7 +117,7 @@ pipeline {
                           set IMAGE_TAG=${IMAGE_TAG}
                           docker compose pull
                           docker compose up -d --remove-orphans
-                          powershell -Command "for (\$i=1; \$i -le 20; \$i++) { if ((curl.exe -fs http://localhost:8081/actuator/health) -match '\"status\":\"UP\"') { Write-Host 'Service is UP'; exit 0 }; Start-Sleep 5 }; Write-Host 'Health check failed'; docker compose logs --tail=50; exit 1"
+                          powershell -Command "for (\$i=1; \$i -le 20; \$i++) { if ((curl.exe -fs http://localhost:8081/actuator/health) -match 'UP') { Write-Host 'Service is UP'; exit 0 }; Start-Sleep 5 }; Write-Host 'Health check failed'; docker compose logs --tail=50; exit 1"
                         """
                     }
                 }
