@@ -19,8 +19,8 @@
     }
     .header {
       text-align: center;
-      margin-bottom: 22px;
-      border-bottom: 1.5px solid #333;
+      margin-bottom: 20px;
+      border-bottom: 1.5px solid #222;
       padding-bottom: 12px;
     }
     h1 {
@@ -36,27 +36,22 @@
     }
     .author {
       font-size: 11pt;
-      font-weight: 600;
+      font-weight: bold;
       margin: 0;
     }
     h2 {
       font-size: 13pt;
       font-weight: bold;
-      margin: 16px 0 8px 0;
+      margin: 18px 0 8px 0;
       border-bottom: 1px solid #ddd;
       padding-bottom: 2px;
-    }
-    h3 {
-      font-size: 11pt;
-      font-weight: bold;
-      margin: 12px 0 4px 0;
     }
     p {
       margin: 0 0 8px 0;
       text-align: justify;
     }
     ul {
-      margin: 4px 0 10px 18px;
+      margin: 4px 0 10px 20px;
       padding: 0;
     }
     li {
@@ -73,7 +68,7 @@
       font-family: "Consolas", "Courier New", monospace;
       font-size: 8.5pt;
       background: #f8fafc;
-      border: 1px solid #e2e8f0;
+      border: 1px solid #cbd5e1;
       padding: 10px;
       border-radius: 4px;
       overflow-x: auto;
@@ -100,31 +95,21 @@
       font-size: 9pt;
       font-style: italic;
       text-align: center;
-      margin-top: 4px;
-      margin-bottom: 14px;
-      color: #475569;
+      margin-top: 5px;
+      margin-bottom: 16px;
+      color: #334155;
     }
     .figure-box {
       text-align: center;
-      margin: 12px 0 8px 0;
+      margin: 14px 0 8px 0;
       page-break-inside: avoid;
     }
     .figure-box img {
       max-width: 100%;
       height: auto;
-      border: 1px solid #cbd5e1;
+      border: 1px solid #94a3b8;
       border-radius: 4px;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.06);
-    }
-    .img-placeholder {
-      border: 2px dashed #94a3b8;
-      border-radius: 6px;
-      padding: 24px;
-      text-align: center;
-      background: #f8fafc;
-      color: #475569;
-      margin: 8px 0;
-      font-size: 10pt;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.1);
     }
     .page-break {
       page-break-before: always;
@@ -136,7 +121,7 @@
   <div class="header">
     <h1>End-to-End CI/CD Pipeline for a Calculator REST API</h1>
     <div class="subtitle">CSE 816 — Software Production Engineering &nbsp;|&nbsp; Mini-Project Report</div>
-    <div class="author">Venkat &nbsp;|&nbsp; [Roll Number]</div>
+    <div class="author">P. Venkata Rami Reddy &nbsp;|&nbsp; [Roll Number: IMTXXXXXXXX]</div>
   </div>
 
   <h2>1 Overview</h2>
@@ -144,9 +129,9 @@
     A Spring Boot (Java 17, Maven) calculator service exposes <code>/api/v1/add</code>, <code>subtract</code>, <code>multiply</code>, <code>divide</code> and the Actuator endpoint <code>/actuator/health</code>. Invalid or missing parameters and division by zero return HTTP 400 with a structured JSON error.
   </p>
   <ul>
-    <li><strong>GitHub:</strong> <a href="https://github.com/Venkat96r/calculator-devops">https://github.com/Venkat96r/calculator-devops</a></li>
-    <li><strong>Docker Hub:</strong> <a href="https://hub.docker.com/r/venkat96r/calculator-api">https://hub.docker.com/r/venkat96r/calculator-api</a></li>
-    <li><strong>Tools:</strong> Git/GitHub, Jenkins (declarative pipeline), Docker (multi-stage image), Docker Compose with Nginx.</li>
+    <li><strong>GitHub Repository:</strong> <a href="https://github.com/Venkat96r/calculator-devops">https://github.com/Venkat96r/calculator-devops</a></li>
+    <li><strong>Docker Hub Repository:</strong> <a href="https://hub.docker.com/r/venkat96r/calculator-api">https://hub.docker.com/r/venkat96r/calculator-api</a></li>
+    <li><strong>Tools in Scope:</strong> Git/GitHub, Jenkins (declarative pipeline), Docker (multi-stage image), Docker Compose with Nginx.</li>
   </ul>
 
   <h2>2 Pipeline Architecture</h2>
@@ -203,19 +188,19 @@ git push    -->  repository  -->  Pipeline job + Jenkinsfile  -->  notification
       </tr>
       <tr>
         <td><strong>Build</strong></td>
-        <td><code>mvn -B clean package -DskipTests</code> compiles Java 17 code and produces the executable JAR <code>target/calculator.jar</code>.</td>
+        <td><code>mvn -B clean package -DskipTests</code> compiles the Java 17 code and produces the executable JAR <code>target/calculator.jar</code>.</td>
       </tr>
       <tr>
         <td><strong>Test</strong></td>
-        <td><code>mvn -B test</code> runs the JUnit 5 unit tests and MockMvc integration tests. The <code>junit</code> step publishes <code>target/surefire-reports/*.xml</code>; a failing test halts the pipeline.</td>
+        <td><code>mvn -B test</code> executes the 5 JUnit 5 unit tests and 7 MockMvc integration tests. The <code>junit</code> step publishes <code>target/surefire-reports/*.xml</code>; a failing test halts the pipeline.</td>
       </tr>
       <tr>
         <td><strong>Docker Build</strong></td>
-        <td>Builds the multi-stage image (Maven/JDK 17 build stage, slim JRE 17 Alpine runtime stage, non-root user <code>app:100</code>, EXPOSE 8080, dependency layer cached) and tags it with the build number and <code>latest</code>.</td>
+        <td>Builds the multi-stage image (Maven/JDK 17 builder with dependency offline cache, slim JRE 17 Alpine runtime, non-root user <code>app:100</code>, EXPOSE 8080) and tags it with <code>${BUILD_NUMBER}</code> and <code>latest</code>.</td>
       </tr>
       <tr>
         <td><strong>Push</strong></td>
-        <td>Logs in with <code>withCredentials</code> using Jenkins credential <code>docker-cred</code>, pipes credentials through <code>docker login --password-stdin</code>, pushes both tags, and logs out in a post block. No secret is stored in repository or logs.</td>
+        <td>Logs in with <code>withCredentials</code> using Jenkins credential <code>docker-cred</code>, pipes credentials through <code>docker login --password-stdin</code>, pushes both tags, and logs out in a post block. No secret is saved in repository or logged.</td>
       </tr>
       <tr>
         <td><strong>Deploy</strong></td>
@@ -223,7 +208,7 @@ git push    -->  repository  -->  Pipeline job + Jenkinsfile  -->  notification
       </tr>
       <tr>
         <td><strong>Notify</strong></td>
-        <td>The pipeline post block dispatches a <code>SUCCESS</code> or <code>FAILURE</code> email with the build URL.</td>
+        <td>The pipeline post block dispatches an automated <code>SUCCESS</code> or <code>FAILURE</code> email with the build URL.</td>
       </tr>
     </tbody>
   </table>
@@ -259,40 +244,25 @@ git push    -->  repository  -->  Pipeline job + Jenkinsfile  -->  notification
   <h2>5 Screenshots</h2>
 
   <div class="figure-box">
-    <img src="screenshots/a_jenkins_pipeline.png" alt="(a) Green Jenkins pipeline run" onerror="this.outerHTML='<div class=\'img-placeholder\'><strong>(a) Green Jenkins pipeline run (all stages)</strong><br>Snap from <code>http://localhost:8080/job/calculator-devops/</code> (Stage View) & save to <code>screenshots/a_jenkins_pipeline.png</code></div>'">
-    <div class="caption">(a) Green Jenkins pipeline run (all stages)</div>
+    <img src="screenshots/screenshot_a_jenkins.png" alt="Green Jenkins pipeline run">
+    <div class="caption">Figure 2. Green Jenkins declarative pipeline execution graph (all stages passing from Checkout through Deploy and Post Actions).</div>
   </div>
 
-  <div class="figure-box">
-    <img src="screenshots/b_email_notification.png" alt="(b) Build status e-mail notification" onerror="this.outerHTML='<div class=\'img-placeholder\'><strong>(b) Build status e-mail notification</strong><br>Snap email notification from Gmail / mail client & save to <code>screenshots/b_email_notification.png</code></div>'">
-    <div class="caption">(b) Build status e-mail notification</div>
-  </div>
-
-  <div class="figure-box">
-    <img src="screenshots/c_docker_ps.png" alt="(c) docker ps: Nginx and two calculator replicas">
-    <div class="caption">(c) docker ps: Nginx and two calculator replicas</div>
-  </div>
-
-  <div class="figure-box">
-    <img src="screenshots/d_sample_api_400.png" alt="(d) Sample API, a 400 error">
-    <div class="caption">(d) Sample API, a 400 error</div>
+  <div class="figure-box" style="max-width: 85%; margin: 0 auto;">
+    <img src="screenshots/screenshot_b_email.png" alt="Build status e-mail notification">
+    <div class="caption">Figure 3. Build status email notification received in Gmail inbox with build number (#7), image tag, and build URL.</div>
   </div>
 
   <div class="page-break"></div>
 
   <div class="figure-box">
-    <img src="screenshots/e_dockerhub_tags.png" alt="(e) Docker Hub repository with build-number tags" onerror="this.outerHTML='<div class=\'img-placeholder\'><strong>(e) Docker Hub repository with build-number tags</strong><br>Snap from <code>https://hub.docker.com/r/venkat96r/calculator-api/tags</code> & save to <code>screenshots/e_dockerhub_tags.png</code></div>'">
-    <div class="caption">(e) Docker Hub repository with build-number tags</div>
+    <img src="screenshots/screenshot_c_docker_ps.png" alt="docker compose ps output">
+    <div class="caption">Figure 4. <code>docker compose ps</code> output showing active Nginx reverse proxy on port 8081 and two healthy Spring Boot replicas.</div>
   </div>
 
   <div class="figure-box">
-    <img src="screenshots/f_git_graph.png" alt="(f) Git commit history graph">
-    <div class="caption">(f) Git commit history graph with feature branch merges</div>
-  </div>
-
-  <div class="figure-box">
-    <img src="screenshots/g_sample_api_200.png" alt="(g) HTTP 200 OK response">
-    <div class="caption">(g) HTTP 200 OK response</div>
+    <img src="screenshots/screenshot_d_sample_api.png" alt="Sample API responses">
+    <div class="caption">Figure 5. Sample API responses: successful addition calculation (HTTP 200 OK) and structured validation error for division by zero (HTTP 400 Bad Request).</div>
   </div>
 
 </body>
