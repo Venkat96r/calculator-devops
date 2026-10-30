@@ -17,11 +17,6 @@ pipeline {
         IMAGE_TAG      = "${BUILD_NUMBER}"
     }
 
-    tools {
-        maven 'Maven3'          // must match name in Jenkins Global Tool Configuration
-        jdk   'JDK17'
-    }
-
     stages {
         stage('Checkout') {
             steps {
@@ -31,26 +26,42 @@ pipeline {
 
         stage('Build') {
             steps {
-                sh 'mvn -B clean package -DskipTests'
+                script {
+                    if (isUnix()) {
+                        sh 'mvn -B clean package -DskipTests'
+                    } else {
+                        bat 'mvn -B clean package -DskipTests'
+                    }
+                }
             }
         }
 
         stage('Test') {
             steps {
-                sh 'mvn -B test'
+                script {
+                    if (isUnix()) {
+                        sh 'mvn -B test'
+                    } else {
+                        bat 'mvn -B test'
+                    }
+                }
             }
             post {
                 always {
-                    junit 'target/surefire-reports/*.xml'
+                    junit allowEmptyResults: true, testResults: 'target/surefire-reports/*.xml'
                 }
             }
         }
 
         stage('Docker Build') {
             steps {
-                sh '''
-                  docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest .
-                '''
+                script {
+                    if (isUnix()) {
+                        sh "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest ."
+                    } else {
+                        bat "docker build -t ${IMAGE_NAME}:${IMAGE_TAG} -t ${IMAGE_NAME}:latest ."
+                    }
+                }
             }
         }
 
@@ -59,46 +70,73 @@ pipeline {
                 withCredentials([usernamePassword(credentialsId: 'docker-cred',
                                                   usernameVariable: 'DH_USER',
                                                   passwordVariable: 'DH_PASS')]) {
-                    sh '''
-                      echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
-                      docker push ${IMAGE_NAME}:${IMAGE_TAG}
-                      docker push ${IMAGE_NAME}:latest
-                      docker logout
-                    '''
+                    script {
+                        if (isUnix()) {
+                            sh '''
+                              echo "$DH_PASS" | docker login -u "$DH_USER" --password-stdin
+                              docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                              docker push ${IMAGE_NAME}:latest
+                              docker logout
+                            '''
+                        } else {
+                            bat """
+                              echo %DH_PASS% | docker login -u %DH_USER% --password-stdin
+                              docker push ${IMAGE_NAME}:${IMAGE_TAG}
+                              docker push ${IMAGE_NAME}:latest
+                              docker logout
+                            """
+                        }
+                    }
                 }
             }
         }
 
         stage('Deploy') {
             steps {
-                sh '''
-                  export DOCKERHUB_USER IMAGE_TAG
-                  docker compose pull
-                  docker compose up -d --remove-orphans
+                script {
+                    if (isUnix()) {
+                        sh '''
+                          export DOCKERHUB_USER IMAGE_TAG
+                          docker compose pull
+                          docker compose up -d --remove-orphans
 
-                  echo "Waiting for health..."
-                  for i in $(seq 1 20); do
-                    if curl -fs http://localhost:8081/actuator/health | grep -q '"status":"UP"'; then
-                      echo "Service is UP"; exit 0
-                    fi
-                    sleep 5
-                  done
-                  echo "Health check failed"; docker compose logs --tail=50; exit 1
-                '''
+                          echo "Waiting for health..."
+                          for i in $(seq 1 20); do
+                            if curl -fs http://localhost:8081/actuator/health | grep -q '"status":"UP"'; then
+                              echo "Service is UP"; exit 0
+                            fi
+                            sleep 5
+                          done
+                          echo "Health check failed"; docker compose logs --tail=50; exit 1
+                        '''
+                    } else {
+                        bat """
+                          set DOCKERHUB_USER=${DOCKERHUB_USER}
+                          set IMAGE_TAG=${IMAGE_TAG}
+                          docker compose pull
+                          docker compose up -d --remove-orphans
+                          powershell -Command "for (\$i=1; \$i -le 20; \$i++) { if ((curl.exe -fs http://localhost:8081/actuator/health) -match '\"status\":\"UP\"') { Write-Host 'Service is UP'; exit 0 }; Start-Sleep 5 }; Write-Host 'Health check failed'; docker compose logs --tail=50; exit 1"
+                        """
+                    }
+                }
             }
         }
     }
 
     post {
         success {
-            mail to: 'ramivenkat16@gmail.com',
-                 subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "Build succeeded.\nImage: ${IMAGE_NAME}:${IMAGE_TAG}\n${env.BUILD_URL}"
+            catchError(buildResult: 'SUCCESS', stageResult: 'SUCCESS') {
+                mail to: 'ramivenkat16@gmail.com',
+                     subject: "SUCCESS: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                     body: "Build succeeded.\nImage: ${IMAGE_NAME}:${IMAGE_TAG}\n${env.BUILD_URL}"
+            }
         }
         failure {
-            mail to: 'ramivenkat16@gmail.com',
-                 subject: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
-                 body: "Build failed.\nSee ${env.BUILD_URL}console"
+            catchError(buildResult: 'FAILURE', stageResult: 'FAILURE') {
+                mail to: 'ramivenkat16@gmail.com',
+                     subject: "FAILURE: ${env.JOB_NAME} #${env.BUILD_NUMBER}",
+                     body: "Build failed.\nSee ${env.BUILD_URL}console"
+            }
         }
     }
 }
