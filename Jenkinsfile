@@ -8,7 +8,7 @@ pipeline {
     }
 
     triggers {
-        githubPush()            // webhook; if unavailable use: pollSCM('H/2 * * * *')
+        pollSCM('* * * * *')     // polls GitHub every minute so builds trigger on localhost without webhook tunnel
     }
 
     environment {
