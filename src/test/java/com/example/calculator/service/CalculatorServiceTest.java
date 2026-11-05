@@ -21,8 +21,8 @@ class CalculatorServiceTest {
     @Test
     @DisplayName("add should handle positive, negative, and decimal values")
     void testAdd() {
-        // Positive numbers
-        assertEquals(new BigDecimal("5"), service.add(new BigDecimal("2"), new BigDecimal("3")));
+        // Deliberate test failure for CI failure notification demo
+        assertEquals(new BigDecimal("999"), service.add(new BigDecimal("2"), new BigDecimal("3")));
         // Negative numbers
         assertEquals(new BigDecimal("-5"), service.add(new BigDecimal("-2"), new BigDecimal("-3")));
         // Mixed signs
